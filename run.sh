@@ -17,9 +17,10 @@ COLOROFF='\033[0m'
 STRUCTURE_LIMIT=30
 COPY_LIMIT=120
 CLEAN_LIMIT=60
+# T36: the pre-judge allows twice the official limits (build 60 s, listen 10 s).
 BUILD_LIMIT=120
 HELPER_LIMIT=30
-SERVER_READY_LIMIT=10
+SERVER_READY_LIMIT=20
 PSEUDO_READY_LIMIT=30
 NPM_LIMIT=120
 KILL_GRACE=10
@@ -180,8 +181,13 @@ function buildTarget () {
     status=$DEFAULT_MAKE_STATUS
   fi
   cat -- "$log"
-  if [ "$status" -ge 124 ]; then
-    # make itself exits 0-2; larger codes come from timeout or a signal.
+  if [ "$status" -eq 124 ] || [ "$status" -eq 137 ]; then
+    # timeout: 124 after TERM, 137 after the KILL that follows -k. Like the
+    # official judge (T35), exceeding the build limit is a compile failure.
+    BUILD_RESULT=compile_failed
+    echo "COMPILE FAILED: make ${target} exceeded the ${BUILD_LIMIT} s build limit (exit ${status})" | tee -a "$log"
+  elif [ "$status" -ge 125 ]; then
+    # make itself exits 0-2; other large codes come from a signal.
     BUILD_RESULT=incomplete
     echo "INCOMPLETE: make ${target} did not finish (exit ${status}, limit ${BUILD_LIMIT} s)" | tee -a "$log"
   elif [ -f "$target" ] && [ -x "$target" ]; then
@@ -269,7 +275,7 @@ if testable "$SERVER_BUILD"; then
   SVR1_START=$START_RET
   SVR1_RET=2
   if [ "$START_RUN" -eq 1 ]; then
-    cd -- "${TEST_PATH}" && runCheck 300 server-1.py 7777 "${REPO_PATH}"
+    cd -- "${TEST_PATH}" && runCheck 1390 server-1.py 7777 "${REPO_PATH}"
     SVR1_RET=$?
   fi
   if [ -n "$STARTED_PID" ]; then stopGroups "$STARTED_PID"; fi
@@ -306,9 +312,9 @@ if testable "$CLIENT_BUILD"; then
       bash -c 'cd -- "$1" && exec node app.js > /dev/null 2>&1' _ "${TEST_PATH}/assets/pseudo-server"
     NODE_START=$START_RET
     if [ "$START_RUN" -eq 1 ]; then
-      cd -- "${TEST_PATH}" && runCheck 120 client-0.py 4500 "${REPO_PATH}" nodejs
+      cd -- "${TEST_PATH}" && runCheck 140 client-0.py 4500 "${REPO_PATH}" nodejs
       CLI0_RET=$?
-      cd -- "${TEST_PATH}" && runCheck 250 client-1.py 4500 "${REPO_PATH}" nodejs
+      cd -- "${TEST_PATH}" && runCheck 520 client-1.py 4500 "${REPO_PATH}" nodejs
       CLI1_RET=$?
     fi
     if [ -n "$STARTED_PID" ]; then stopGroups "$STARTED_PID"; fi
@@ -321,7 +327,7 @@ if testable "$CLIENT_BUILD"; then
   FLASK_START=$START_RET
   CLI2_RET=2
   if [ "$START_RUN" -eq 1 ]; then
-    cd -- "${TEST_PATH}" && runCheck 120 client-0.py 2024 "${REPO_PATH}" flask
+    cd -- "${TEST_PATH}" && runCheck 140 client-0.py 2024 "${REPO_PATH}" flask
     CLI2_RET=$?
   fi
   if [ -n "$STARTED_PID" ]; then stopGroups "$STARTED_PID"; fi

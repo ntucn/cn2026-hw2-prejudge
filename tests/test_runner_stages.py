@@ -250,11 +250,13 @@ class PublicRunnerStageTests(unittest.TestCase):
         self.assertIn('needs_review (make failed but produced ./server)', run.summary)
         self.assertEqual(run.called, CHECKS)
 
-    def test_build_deadline_is_incomplete(self):
+    def test_build_over_the_limit_is_a_compile_failure(self):
+        # T35/T36: exceeding the build limit counts as a compile failure.
         run = self.run_public(build=60, patches=[('BUILD_LIMIT=120', 'BUILD_LIMIT=1')])
-        self.assertEqual(run.code, 2, run.debug)
+        self.assertEqual(run.code, 1, run.debug)
         self.assertLess(run.elapsed, 30)
-        self.assertIn('did not finish (exit 124', run.logs['make-server.log'])
+        self.assertIn('exceeded the 1 s build limit (exit 124)', run.logs['make-server.log'])
+        self.assertIn('failed (compile failed)', run.summary)
         self.assertEqual(run.called, [])
 
     def test_occupied_port_and_exited_server_are_classified(self):
@@ -273,7 +275,7 @@ class PublicRunnerStageTests(unittest.TestCase):
         self.assertEqual(npm.code, 2, npm.debug)
         self.assertEqual(npm.called, ['server-0.py', 'server-1.py', 'client-0.py'])
         fault = self.run_public(build=0, env={'TEST_READY_FAULT': '1'},
-                                patches=[('SERVER_READY_LIMIT=10', 'SERVER_READY_LIMIT=1'),
+                                patches=[('SERVER_READY_LIMIT=20', 'SERVER_READY_LIMIT=1'),
                                          ('PSEUDO_READY_LIMIT=30', 'PSEUDO_READY_LIMIT=1')])
         self.assertEqual(fault.code, 2, fault.debug)
         self.assertIn('readiness could not be observed', fault.debug)

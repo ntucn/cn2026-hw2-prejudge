@@ -1,7 +1,10 @@
 from assets.utils import *
 import sys
 
-TIMEOUT = 2
+# T36: twice the official limits: 2 x 3 s per command, and
+# 2 x (3 s + 1 MiB / 1 MiB/s) = 8 s for the 1 MiB put/get.
+TIMEOUT = 6
+TRANSFER_1M = 8
 PORT = 2025
 REPO = '..'
 SERV = 'nodejs'
@@ -39,7 +42,7 @@ if __name__ == '__main__':
         c = ClientProcess(f'./client localhost {PORT} demo:12345', cwd=f'{REPO}/hw2')
 
     def successful_put():
-        sendCMD(c, 'put client.bin', 'Command succeeded.\n')
+        sendCMD(c, 'put client.bin', 'Command succeeded.\n', timeout=TRANSFER_1M)
         cmpFile(f'{REPO}/hw2/client.bin', f'assets/pseudo-server/files-{SERV}/client.bin')
 
     def missing_put():
@@ -47,7 +50,7 @@ if __name__ == '__main__':
         sendCMD(c, f'put {name}', 'Command failed. File not found on local.\n', stream='stderr')
 
     def successful_get():
-        sendCMD(c, 'get server.bin', 'Command succeeded.\n')
+        sendCMD(c, 'get server.bin', 'Command succeeded.\n', timeout=TRANSFER_1M)
         cmpFile(f'assets/pseudo-server/files-{SERV}/server.bin', f'{REPO}/hw2/files/server.bin')
 
     def missing_get():

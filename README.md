@@ -79,4 +79,17 @@ server-test                 (server-0.py):   pass
 The exit code is 0 when everything passed, 1 when something failed or needs
 review, and 2 when something could not be checked.
 
+## 5. Time limits
+
+Grading uses these limits; each is a total, not idle time:
+
+- Build: 60 s for each `make` run. Exceeding it counts as a compile failure.
+- Server: listening within 10 s of starting; every HTTP request answered
+  within 10 s. A file upload or download gets 10 s + size / 1 MiB/s.
+- Client: every command answered within 3 s. A `put`, `putv` or `get` gets
+  3 s + size / 1 MiB/s.
+
+The pre-judge allows twice each of these limits, so a check that passes only
+just here may still fail in grading.
+
 If you have questions, email `ntu.cnta@gmail.com`.

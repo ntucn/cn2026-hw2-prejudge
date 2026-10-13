@@ -1,7 +1,9 @@
 from assets.utils import *
 import sys
 
-TIMEOUT = 2
+# T36: twice the official limits: 2 x 3 s per command, and
+# 2 x (3 s + size / 1 MiB/s) for each put/get (third column).
+TIMEOUT = 6
 PORT = 2025
 REPO = '..'
 SERV = 'nodejs'
@@ -21,10 +23,9 @@ if __name__ == '__main__':
 
     checks = Checks()
     delPath(f'{REPO}/hw2/files')
-    # 100 s for 100 MiB as in the official judge; 10 s failed on loaded or emulated machines.
-    samples = [('L4RGebUtNoT7o01ArgE', '100M', 100),
-               ('a 5 a 5 a a 5 5 5 o o 1 a 1 a a 5 5 5 o o', '1M', TIMEOUT),
-               ('iS7H@TL3g4L?', '5M', TIMEOUT)]
+    samples = [('L4RGebUtNoT7o01ArgE', '100M', 206),
+               ('a 5 a 5 a a 5 5 5 o o 1 a 1 a a 5 5 5 o o', '1M', 8),
+               ('iS7H@TL3g4L?', '5M', 16)]
     for name, size, _ in samples:
         genFile(f'{REPO}/hw2/{name}', size=size)
 

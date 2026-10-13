@@ -1,5 +1,6 @@
 from assets.utils import *
 import requests
+from assets import timed_http
 import string
 import sys
 import re
@@ -51,6 +52,8 @@ if __name__ == '__main__':
     if len(sys.argv) >= 3:
         REPO = sys.argv[2]
 
+    # T36: twice the official limits, as totals: 2 x 10 s per request and
+    # 2 x (10 s + size / 1 MiB/s) for a file transfer.
     TIMEOUT = 20
     checks = Checks()
     delPath('assets/files')
@@ -62,9 +65,13 @@ if __name__ == '__main__':
                ('averylargefile', '200M'), ('a STaRanG3 F1le', '3K')]
     for name, size in samples:
         genFile(f'assets/files/{name}', size=size)
+    sizes = dict(samples)
+
+    def limit(size):
+        return timed_http.prejudge_limit(10, size)
 
     def homepage():
-        req = requests.get(f'http://localhost:{PORT}/', timeout=TIMEOUT)
+        req = timed_http.get(f'http://localhost:{PORT}/', timeout=TIMEOUT)
         assert req.status_code == 200
         name, id = regex(req.content.decode(), 'assets/index.html')
         print(f'{name = } {id = }')
@@ -72,8 +79,8 @@ if __name__ == '__main__':
     def upload(name, credentials, expected_status):
         files = uploadFile(f'assets/files/{name}')
         try:
-            req = requests.post(f'http://localhost:{PORT}/api/file',
-                                files=files, auth=credentials, timeout=TIMEOUT)
+            req = timed_http.post(f'http://localhost:{PORT}/api/file',
+                                  files=files, auth=credentials, timeout=limit(sizes[name]))
         finally:
             files['upfile'].close()
         assert req.status_code == expected_status
@@ -81,7 +88,7 @@ if __name__ == '__main__':
             cmpFile(f'assets/files/{name}', f'{REPO}/hw2/web/files/{name}')
 
     def file_list():
-        req = requests.get(f'http://localhost:{PORT}/file/', timeout=TIMEOUT)
+        req = timed_http.get(f'http://localhost:{PORT}/file/', timeout=TIMEOUT)
         assert req.status_code == 200
         regex(req.content.decode(), 'assets/listf.rhtml')
         actual = parseTable(req.content.decode())
@@ -91,13 +98,13 @@ if __name__ == '__main__':
                           'averylargefile': '/api/file/averylargefile'}
 
     def video_list():
-        req = requests.get(f'http://localhost:{PORT}/video/', timeout=TIMEOUT)
+        req = timed_http.get(f'http://localhost:{PORT}/video/', timeout=TIMEOUT)
         assert req.status_code == 200
         regex(req.content.decode(), 'assets/listv.rhtml')
         assert parseTable(req.content.decode()) == {}
 
     def download():
-        req = requests.get(f'http://localhost:{PORT}/api/file/a%20STaRanG3%20F1le', timeout=TIMEOUT)
+        req = timed_http.get(f'http://localhost:{PORT}/api/file/a%20STaRanG3%20F1le', timeout=limit(sizes['a STaRanG3 F1le']))
         assert req.status_code == 200
         saveFile(req.content, 'assets/download/a STaRanG3 F1le')
         cmpFile('assets/files/a STaRanG3 F1le', 'assets/download/a STaRanG3 F1le')

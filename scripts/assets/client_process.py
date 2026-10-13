@@ -118,7 +118,7 @@ class ClientProcess:
                                     cls._description(data))
         return reply
 
-    def command(self, command, timeout=5, stream='stdout'):
+    def command(self, command, timeout=6, stream='stdout'):
         """Return the reply; consume the next prompt even on a stream violation.
 
         A single monotonic deadline covers the prompt, command and reply.
@@ -156,7 +156,7 @@ class ClientProcess:
                                         self._description(data))
             self._read(remaining)
 
-    def startup_usage(self, timeout=5, expected_exit=255):
+    def startup_usage(self, timeout=6, expected_exit=255):
         """Require stderr usage and return -1 (POSIX exit status 255)."""
         deadline = time.monotonic() + timeout
         while self._selector.get_map():

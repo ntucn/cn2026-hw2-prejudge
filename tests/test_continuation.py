@@ -117,6 +117,10 @@ class PublicChecksTests(unittest.TestCase):
                 stack.enter_context(mock.patch.object(self.utils, 'Checks', RecordingChecks))
                 stack.enter_context(mock.patch.object(requests, 'get', side_effect=get))
                 stack.enter_context(mock.patch.object(requests, 'post', side_effect=AssertionError('unexpected upload')))
+                # T36: the server checks send through timed_http (same doubles).
+                timed_http = importlib.import_module('assets.timed_http')
+                stack.enter_context(mock.patch.object(timed_http, 'get', side_effect=get))
+                stack.enter_context(mock.patch.object(timed_http, 'post', side_effect=AssertionError('unexpected upload')))
                 stack.enter_context(mock.patch.object(sys, 'argv', [filename, '8080', str(repo), 'nodejs']))
                 stack.enter_context(contextlib.redirect_stdout(captured))
                 stack.enter_context(contextlib.redirect_stderr(captured))

@@ -11,7 +11,7 @@ from pathlib import Path
 
 
 # Defaults of helper calls that do not pass an explicit deadline.
-DEFAULT_COSTS = {'command': 5, 'startup_usage': 5, 'prepare_video_fixture': 45}
+DEFAULT_COSTS = {'command': 6, 'startup_usage': 6, 'prepare_video_fixture': 45}
 # conversion_timeout bounds the whole video check, including its requests.
 DEADLINE_KEYWORDS = ('conversion_timeout', 'timeout', 'connect_timeout')
 HTTP_VERBS = {'get', 'post', 'put', 'delete', 'head', 'patch', 'options', 'request'}
@@ -105,7 +105,7 @@ class ScriptBudget:
             return DEFAULT_COSTS[name]
         receiver = func.value if isinstance(func, ast.Attribute) else None
         if (name in HTTP_VERBS and isinstance(receiver, ast.Name)
-                and receiver.id in {'requests', 'session'}) or name in {'remote', 'httpConnection'}:
+                and receiver.id in {'requests', 'session', 'timed_http'}) or name in {'remote', 'httpConnection'}:
             self.unbounded.append(line)
         return 0
 
